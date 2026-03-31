@@ -2,15 +2,15 @@ services:
   - type: web
     name: openclaw
     runtime: docker
-    plan: standard
+    # Standard (~2GB RAM) is too small for a ~1.5GB+ Node heap + proxy; Pro (~4GB) fits NODE_OPTIONS below.
+    plan: pro
     healthCheckPath: /health
     envVars:
       - key: PORT
         value: "10000"
-      # OpenClaw gateway runs on Node; default ~1GB heap can OOM under load.
-      # Keep below instance RAM (Standard web ≈2GB); adjust if you change plan.
+      # Heap must stay below instance RAM (see https://render.com/docs/blueprint-spec#plan).
       - key: NODE_OPTIONS
-        value: "--max-old-space-size=1536"
+        value: "--max-old-space-size=3072"
       - key: OPENCLAW_STATE_DIR
         value: /data/.openclaw
       - key: OPENCLAW_WORKSPACE_DIR

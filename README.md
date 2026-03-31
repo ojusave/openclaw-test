@@ -27,7 +27,9 @@ By default, this template uses the `latest` tag. Override this by setting the `O
 
 ## Customization
 
-The blueprint sets `NODE_OPTIONS=--max-old-space-size=1536` so the gateway process has a larger JavaScript heap than the Node default (the Go proxy inherits the same environment and passes it to `openclaw gateway run`). If you resize the instance or still see out-of-memory errors, raise or lower that value so it stays below available memory.
+The blueprint uses instance type **`pro`** (~4 GB RAM) and `NODE_OPTIONS=--max-old-space-size=3072` because the OpenClaw gateway (Node) can exceed a ~1.5 GB heap under load; **Standard (~2 GB)** is not enough headroom for that heap plus the Go proxy and OS. The proxy sets a single `NODE_OPTIONS` on every `openclaw` subprocess so the limit is always applied.
+
+To save cost, you can switch the service to **Standard** in the dashboard and lower `NODE_OPTIONS` (for example `--max-old-space-size=1792`), understanding that heavy workloads may OOM again.
 
 Override the OpenClaw version with a build argument:
 

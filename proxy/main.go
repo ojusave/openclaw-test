@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	cookieName = "openclaw_auth"
+	cookieName   = "openclaw_auth"
 	cookieMaxAge = 30 * 24 * 60 * 60 // 30 days
 )
 
@@ -52,6 +52,31 @@ func envOr(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// default embedded in image + render.yaml; override with NODE_OPTIONS in the dashboard.
+const defaultNodeOptions = "--max-old-space-size=3072"
+
+func nodeOptionsForOpenclaw() string {
+	if v := strings.TrimSpace(os.Getenv("NODE_OPTIONS")); v != "" {
+		return v
+	}
+	return defaultNodeOptions
+}
+
+// envForOpenclaw builds the environment for Node (openclaw) subprocesses with a single
+// NODE_OPTIONS entry so the heap limit is not lost to duplicate keys in os.Environ().
+func envForOpenclaw(extra ...string) []string {
+	opts := nodeOptionsForOpenclaw()
+	out := make([]string, 0, len(os.Environ())+len(extra)+1)
+	for _, e := range os.Environ() {
+		if !strings.HasPrefix(e, "NODE_OPTIONS=") {
+			out = append(out, e)
+		}
+	}
+	out = append(out, "NODE_OPTIONS="+opts)
+	out = append(out, extra...)
+	return out
 }
 
 func main() {
@@ -161,7 +186,7 @@ func ensureConfigured() {
 	}
 
 	cmd := exec.Command("/usr/local/bin/openclaw", args...)
-	cmd.Env = append(os.Environ(),
+	cmd.Env = envForOpenclaw(
 		"OPENCLAW_STATE_DIR="+stateDir,
 		"OPENCLAW_WORKSPACE_DIR="+workspaceDir,
 	)
@@ -211,7 +236,7 @@ func applyRequiredConfig() {
 
 	for _, args := range configs {
 		cmd := exec.Command("/usr/local/bin/openclaw", args...)
-		cmd.Env = append(os.Environ(),
+		cmd.Env = envForOpenclaw(
 			"OPENCLAW_STATE_DIR="+stateDir,
 			"OPENCLAW_WORKSPACE_DIR="+workspaceDir,
 		)
@@ -235,7 +260,7 @@ func startGateway() {
 		"--port", gatewayPort,
 		"--bind", "loopback",
 	)
-	cmd.Env = append(os.Environ(),
+	cmd.Env = envForOpenclaw(
 		"OPENCLAW_STATE_DIR="+stateDir,
 		"OPENCLAW_WORKSPACE_DIR="+workspaceDir,
 		"OPENCLAW_GATEWAY_PORT="+gatewayPort,
