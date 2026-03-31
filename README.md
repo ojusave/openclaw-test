@@ -28,10 +28,6 @@ By default, this template uses the `latest` tag. Override this by setting the `O
 
 ## Customization
 
-**Instance and Node heap:** The blueprint uses a **Pro** instance and `NODE_OPTIONS=--max-old-space-size=3072` in `render.yaml` so the gateway (Node) has enough heap alongside the Go proxy. You can switch to **Standard** and lower `NODE_OPTIONS` in the dashboard to reduce cost; heavy workloads may run out of memory on smaller instances.
-
-**Control UI origins:** Each startup syncs `gateway.controlUi.allowedOrigins` for your Render hostname. If you use a **custom domain**, set `OPENCLAW_CONTROL_UI_ALLOWED_ORIGINS` to a JSON array of origins (for example `["https://your-domain.com"]`).
-
 Override the OpenClaw version with a build argument:
 
 ```bash
