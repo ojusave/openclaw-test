@@ -7,6 +7,10 @@ services:
     envVars:
       - key: PORT
         value: "10000"
+      # OpenClaw gateway runs on Node; default ~1GB heap can OOM under load.
+      # Keep below instance RAM (Standard web ≈2GB); adjust if you change plan.
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=1536"
       - key: OPENCLAW_STATE_DIR
         value: /data/.openclaw
       - key: OPENCLAW_WORKSPACE_DIR

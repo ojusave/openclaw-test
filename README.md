@@ -27,6 +27,8 @@ By default, this template uses the `latest` tag. Override this by setting the `O
 
 ## Customization
 
+The blueprint sets `NODE_OPTIONS=--max-old-space-size=1536` so the gateway process has a larger JavaScript heap than the Node default (the Go proxy inherits the same environment and passes it to `openclaw gateway run`). If you resize the instance or still see out-of-memory errors, raise or lower that value so it stays below available memory.
+
 Override the OpenClaw version with a build argument:
 
 ```bash
