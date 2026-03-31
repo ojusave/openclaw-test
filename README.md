@@ -31,6 +31,8 @@ The blueprint uses instance type **`pro`** (~4 GB RAM) and `NODE_OPTIONS=--max-o
 
 To save cost, you can switch the service to **Standard** in the dashboard and lower `NODE_OPTIONS` (for example `--max-old-space-size=1792`), understanding that heavy workloads may OOM again.
 
+**Control UI “origin not allowed”:** On every startup the proxy applies `gateway.controlUi.allowedOrigins` for your Render hostname (`RENDER_EXTERNAL_HOSTNAME` or `RENDER_EXTERNAL_URL`). If you use a **custom domain**, set env `OPENCLAW_CONTROL_UI_ALLOWED_ORIGINS` to a JSON array of origins (e.g. `["https://openclaw.example.com"]`).
+
 Override the OpenClaw version with a build argument:
 
 ```bash

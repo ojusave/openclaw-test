@@ -98,6 +98,9 @@ func main() {
 
 	ensureDirs()
 	ensureConfigured()
+	// Must run every boot: onboard is skipped when config already exists on disk, but we still
+	// need to sync gateway.controlUi (allowedOrigins for Render hostname, etc.).
+	applyRequiredConfig()
 	go startGateway()
 	go pollGatewayHealth()
 
@@ -200,7 +203,6 @@ func ensureConfigured() {
 	}
 
 	log.Printf("Onboard completed, applying additional config...")
-	applyRequiredConfig()
 }
 
 func createMinimalConfig(configPath string) {
@@ -220,18 +222,39 @@ func createMinimalConfig(configPath string) {
 	}
 }
 
+func renderPublicHostname() string {
+	if h := strings.TrimSpace(os.Getenv("RENDER_EXTERNAL_HOSTNAME")); h != "" {
+		return h
+	}
+	// Fallback when the hostname env is missing (some deploy paths only set the full URL).
+	if u := strings.TrimSpace(os.Getenv("RENDER_EXTERNAL_URL")); u != "" {
+		parsed, err := url.Parse(u)
+		if err == nil && parsed.Host != "" {
+			return parsed.Host
+		}
+	}
+	return ""
+}
+
 func applyRequiredConfig() {
 	// Ensure controlUi.allowInsecureAuth is set for remote browser access
 	configs := [][]string{
 		{"config", "set", "gateway.controlUi.allowInsecureAuth", "true"},
 	}
 
-	// Allow WebSocket connections from Render's external hostname
-	// RENDER_EXTERNAL_HOSTNAME is provided by Render (e.g., "service-id.onrender.com")
-	if renderHost := os.Getenv("RENDER_EXTERNAL_HOSTNAME"); renderHost != "" {
+	// Allow Control UI / WebSocket from the public Render URL (browser Origin is https://…).
+	if renderHost := renderPublicHostname(); renderHost != "" {
 		origin := fmt.Sprintf(`["https://%s"]`, renderHost)
 		configs = append(configs, []string{"config", "set", "gateway.controlUi.allowedOrigins", origin})
-		log.Printf("Allowing WebSocket origin: https://%s", renderHost)
+		log.Printf("Setting gateway.controlUi.allowedOrigins for https://%s", renderHost)
+	} else if strings.TrimSpace(os.Getenv("OPENCLAW_CONTROL_UI_ALLOWED_ORIGINS")) == "" {
+		log.Printf("Warning: RENDER_EXTERNAL_HOSTNAME / RENDER_EXTERNAL_URL unset; allowedOrigins not updated — set OPENCLAW_CONTROL_UI_ALLOWED_ORIGINS or deploy on Render")
+	}
+
+	// Optional override (raw JSON array). Applied last; replaces the automatic Render origin above.
+	if extra := strings.TrimSpace(os.Getenv("OPENCLAW_CONTROL_UI_ALLOWED_ORIGINS")); extra != "" {
+		configs = append(configs, []string{"config", "set", "gateway.controlUi.allowedOrigins", extra})
+		log.Printf("Applying OPENCLAW_CONTROL_UI_ALLOWED_ORIGINS override")
 	}
 
 	for _, args := range configs {
