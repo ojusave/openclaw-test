@@ -20,6 +20,7 @@ By default, this template uses the `latest` tag. Override this by setting the `O
 3. Sessions persist across service restarts
 
 **Security:**
+
 - Gateway binds to loopback only (never directly exposed)
 - Constant-time token comparison
 - Rate limiting (5 attempts/minute per IP)
@@ -27,11 +28,9 @@ By default, this template uses the `latest` tag. Override this by setting the `O
 
 ## Customization
 
-The blueprint uses instance type **`pro`** (~4 GB RAM) and `NODE_OPTIONS=--max-old-space-size=3072` because the OpenClaw gateway (Node) can exceed a ~1.5 GB heap under load; **Standard (~2 GB)** is not enough headroom for that heap plus the Go proxy and OS. The proxy sets a single `NODE_OPTIONS` on every `openclaw` subprocess so the limit is always applied.
+**Instance and Node heap:** The blueprint uses a **Pro** instance and `NODE_OPTIONS=--max-old-space-size=3072` in `render.yaml` so the gateway (Node) has enough heap alongside the Go proxy. You can switch to **Standard** and lower `NODE_OPTIONS` in the dashboard to reduce cost; heavy workloads may run out of memory on smaller instances.
 
-To save cost, you can switch the service to **Standard** in the dashboard and lower `NODE_OPTIONS` (for example `--max-old-space-size=1792`), understanding that heavy workloads may OOM again.
-
-**Control UI “origin not allowed”:** On every startup the proxy applies `gateway.controlUi.allowedOrigins` for your Render hostname (`RENDER_EXTERNAL_HOSTNAME` or `RENDER_EXTERNAL_URL`). If you use a **custom domain**, set env `OPENCLAW_CONTROL_UI_ALLOWED_ORIGINS` to a JSON array of origins (e.g. `["https://openclaw.example.com"]`).
+**Control UI origins:** Each startup syncs `gateway.controlUi.allowedOrigins` for your Render hostname. If you use a **custom domain**, set `OPENCLAW_CONTROL_UI_ALLOWED_ORIGINS` to a JSON array of origins (for example `["https://your-domain.com"]`).
 
 Override the OpenClaw version with a build argument:
 
